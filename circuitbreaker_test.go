@@ -4,24 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 )
-
-func counter() Circuit {
-	m := &sync.Mutex{}
-	count := 0
-
-	return func(ctx context.Context) (string, error) {
-		m.Lock()
-		count++
-		m.Unlock()
-
-		return fmt.Sprintf("%d", count), nil
-	}
-}
 
 func failAfter(threshold int) Circuit {
 	count := 0
@@ -31,6 +19,16 @@ func failAfter(threshold int) Circuit {
 			return "", errors.New("INTENTIONAL FAIL!")
 		}
 		return "SUCCESS", nil
+	}
+}
+
+func waitAndContinue() Circuit {
+	return func(ctx context.Context) (string, error) {
+		time.Sleep(time.Second)
+		if rand.Int()%2 == 0 {
+			return "SUCCESS", nil
+		}
+		return "Failed", fmt.Errorf("forced failure")
 	}
 }
 
@@ -91,4 +89,24 @@ func TestCircuitBreaker(t *testing.T) {
 	if !doesCircuitReclose {
 		t.Error("circuit doesn't appear to close after time")
 	}
+}
+
+func TestCircuitBreakerDataRace(t *testing.T) {
+	ctx := context.Background()
+
+	circuit := waitAndContinue()
+	breaker := Breaker(circuit, 1)
+
+	wg := &sync.WaitGroup{}
+
+	for count := 1; count <= 20; count++ {
+		wg.Add(1)
+		go func(count int) {
+			defer wg.Done()
+			time.Sleep(time.Millisecond * 50)
+			_, err := breaker(ctx)
+			t.Logf("attempt %d: err= %v", count, err)
+		}(count)
+	}
+	wg.Wait()
 }

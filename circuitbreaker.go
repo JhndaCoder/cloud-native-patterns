@@ -22,7 +22,7 @@ func Breaker(circuit Circuit, failureThreshold uint) Circuit {
 			shouldRetryAt := lastAttempt.Add(time.Second * 2 << d)
 			if !time.Now().After(shouldRetryAt) {
 				m.RUnlock()
-				return "", errors.New("Service unreachable")
+				return "", errors.New("SERVICE UNREACHABLE")
 			}
 		}
 		m.RUnlock()
