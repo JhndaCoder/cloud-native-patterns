@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"sync"
-	"time"
 )
 
 func Funnel(sources ...<-chan int) <-chan int {
@@ -28,23 +26,23 @@ func Funnel(sources ...<-chan int) <-chan int {
 	return dest
 }
 
-func main() {
-	sources := make([]<-chan int, 0)
-	for i := 0; i < 3; i++ {
-		ch := make(chan int)
-		sources = append(sources, ch)
+// func main() {
+// 	sources := make([]<-chan int, 0)
+// 	for i := 0; i < 3; i++ {
+// 		ch := make(chan int)
+// 		sources = append(sources, ch)
 
-		go func() {
-			defer close(ch)
-			for i := 0; i < 5; i++ {
-				ch <- i
-				time.Sleep(time.Second)
-			}
-		}()
-	}
-	// fmt.Println(sources)
-	dest := Funnel(sources...)
-	for d := range dest {
-		fmt.Println(d)
-	}
-}
+// 		go func() {
+// 			defer close(ch)
+// 			for i := 0; i < 5; i++ {
+// 				ch <- i
+// 				time.Sleep(time.Second)
+// 			}
+// 		}()
+// 	}
+
+// 	dest := Funnel(sources...)
+// 	for d := range dest {
+// 		fmt.Println(d)
+// 	}
+// }
